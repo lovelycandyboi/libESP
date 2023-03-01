@@ -29,13 +29,13 @@ bool command_cmp(char* curCmd, char* inputCmd)
 
 	char temp_curCmd[CLI_ARG_BUFFER_SIZE];
 	char temp_inputCmd[CLI_ARG_BUFFER_SIZE];
-	strcpy_s(temp_curCmd, curCmd);
-	strcpy_s(temp_inputCmd, inputCmd);
+	STRCPY(temp_curCmd, curCmd);
+	STRCPY(temp_inputCmd, inputCmd);
 
 	char* curContext   = NULL;
 	char* inputContext = NULL;
-	char* curCmdIter   = strtok_s(temp_curCmd, " ", &curContext);
-	char* inputCmdIter = strtok_s(temp_inputCmd, " ", &inputContext);
+	char* curCmdIter   = STRTOK(temp_curCmd, " ", &curContext);
+	char* inputCmdIter = STRTOK(temp_inputCmd, " ", &inputContext);
 
 	bool isMatched = true;
 
@@ -46,8 +46,8 @@ bool command_cmp(char* curCmd, char* inputCmd)
 			else VV_stringBuf[VV_stringBufIdx++] = inputCmdIter;
 		}
 
-		curCmdIter	 = strtok_s(NULL, " ", &curContext);
-		inputCmdIter = strtok_s(NULL, " ", &inputContext);
+		curCmdIter	 = STRTOK(NULL, " ", &curContext);
+		inputCmdIter = STRTOK(NULL, " ", &inputContext);
 	}
 
 	if (curCmdIter != NULL || inputCmdIter != NULL)	isMatched = false;
