@@ -9,6 +9,14 @@
 
 #define CLI_ARG_BUFFER_SIZE 100
 
+#ifdef _WIN32
+	#define STRCPY strcpy_s
+	#define STRTOK strtok_s
+#else
+	#define STRCPY strcpy
+	#define STRTOK strtok_r
+#endif
+
 extern CLI_BLOCK* CLI_BLOCK_HEAD;
 char* VV_stringBuf[10];
 int VV_stringBufIdx = 0;
