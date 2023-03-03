@@ -12,21 +12,21 @@ CLI_BLOCK* CLI_BLOCK_HEAD = NULL;
 
 DEF_CLI(manual, "help") {
 	printf("=========Cmd List=========\n");
-	for (CLI_BLOCK* blockIter = CLI_BLOCK_HEAD; blockIter != NULL; blockIter = blockIter->next)	
+	for (CLI_BLOCK* blockIter = CLI_BLOCK_HEAD; blockIter != NULL; blockIter = blockIter->next)
 		printf("%s\n", blockIter->command);
 	printf("=========file List=========\n");
 	printf("test_block.txt\n");
 	printf("aes_key.txt\n");
 }
 
-DEF_CLI(print_test, "print_test VV with VV"){
+DEF_CLI(print_test, "print_test VV with VV") {
 	char* arr_array = VV_stringBuf[0];
 	char* arr = VV_stringBuf[1];
 	printf("%s %s\n", arr_array, arr);
 	printf("test seccess!\n");
 }
 
-DEF_CLI(Euler_phi_function, "test euler"){
+DEF_CLI(Euler_phi_function, "test euler") {
 	int N;
 	while (true) {
 		printf("input Val:");
@@ -46,46 +46,16 @@ DEF_CLI(Euler_phi, "test euler VV") {
 }
 
 DEF_CLI(AES128_test, "test AES") {
-	/*
-	char textFileName[20];
-	char keyFileName[20];
-	
-	byte plainTextBlock[4][4];
-	byte aesKeyBlock[4][4];
-	
-	do {
-		printf("write textFile:"); std::cin >> textFileName;
-	} while (!BlockFile_to_4X4matrix(textFileName, plainTextBlock));
-	
-	do {
-		printf("write keyFile:");  std::cin >> keyFileName;
-	} while (!BlockFile_to_4X4matrix(keyFileName, aesKeyBlock));
-	
-	AES_encryption(plainTextBlock, aesKeyBlock);
-
-	printf("aes128 encrypt result->");
-	for (int r = 0; r < 4; r++)
-		for (int c = 0; c < 4; c++)
-			printf("%c", plainTextBlock[r][c]);
-	printf("\n");
-	
-	AES_decryption(plainTextBlock, aesKeyBlock);
-
-	printf("aes128 decrypt result->");
-	for (int r = 0; r < 4; r++)
-		for (int c = 0; c < 4; c++)
-			printf("%c", plainTextBlock[r][c]);
-	printf("\n");
-	*/
-	
+	aes test;
+	test.test_aes();
 	getchar();
 }
-
+/*
 DEF_CLI(AES128_test_cmd, "aes VV with VV") {
 
 	const char* textFileName = VV_stringBuf[0];
 	const char* keyFileName  = VV_stringBuf[1];
-	
+
 	byte plainTextBlock[4][4] = { 0 };
 	byte aesKeyBlock[4][4] = { 0 };
 
@@ -107,7 +77,9 @@ DEF_CLI(AES128_test_cmd, "aes VV with VV") {
 	printf("aes128 decrypt result->");
 	for (int r = 0; r < 4; r++)	for (int c = 0; c < 4; c++)	printf("%c", plainTextBlock[r][c]);	printf("\n");
 
-} 
+}
+*/
+
 
 DEF_CLI(fft_test, "test fft") {
 	string str1, str2;
@@ -153,7 +125,7 @@ void CLI_BLOCK_INIT() {
 	ADD_CLI(Euler_phi_function);
 	ADD_CLI(Euler_phi);
 	ADD_CLI(AES128_test);
-	ADD_CLI(AES128_test_cmd);
+	//ADD_CLI(AES128_test_cmd);
 	ADD_CLI(fft_test);
 	ADD_CLI(exit);
 }
