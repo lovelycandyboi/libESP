@@ -46,6 +46,7 @@ DEF_CLI(Euler_phi, "test euler VV") {
 }
 
 DEF_CLI(AES128_test, "test AES") {
+	/*
 	char textFileName[20];
 	char keyFileName[20];
 	
@@ -75,7 +76,8 @@ DEF_CLI(AES128_test, "test AES") {
 		for (int c = 0; c < 4; c++)
 			printf("%c", plainTextBlock[r][c]);
 	printf("\n");
-  	
+	*/
+	
 	getchar();
 }
 
