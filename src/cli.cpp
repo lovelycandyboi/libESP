@@ -19,97 +19,53 @@ bool quitFlag = false;
 #define STRTOK strtok_s	
 
 void input_cmd(char* input_cmdBuf) {
-	int cmdBuf_idx = 0;
+	int cmdBufIdx = 0;
 	char tempChar;
 	do {
 		tempChar = _getch();
-		if (cmdBuf_idx <= 0) {
-			cmdBuf_idx = 0;
-			input_cmdBuf[0] = '\0';
-		}
+
 		if (tempChar == '\t') {
+
 			bool stopIterFlag = false;
 			for (CLI_BLOCK* blockIter = CLI_BLOCK_HEAD; blockIter != NULL; blockIter = blockIter->next) {
-
 				for (int tabCmpIdx = 0; tabCmpIdx < strlen(blockIter->command); tabCmpIdx++) {
-					if (input_cmdBuf[tabCmpIdx] != blockIter->command[tabCmpIdx]) {
-						if (tabCmpIdx < cmdBuf_idx)	break;
-						else {
-							stopIterFlag = true;
-							_putch(blockIter->command[tabCmpIdx]);
-							input_cmdBuf[cmdBuf_idx++] = blockIter->command[tabCmpIdx];
+					if (strncmp(input_cmdBuf, blockIter->command, cmdBufIdx) == 0) {
+						stopIterFlag = true;
+						for (int i = cmdBufIdx; i < strlen(blockIter->command); i++) {
+							if (blockIter->command[i] == ' ') break;
+							_putch(blockIter->command[i]);
+							input_cmdBuf[cmdBufIdx++] = blockIter->command[i];
 						}
+						break;
 					}
 				}
-
 				if (stopIterFlag) break;
 			}
 
 		}
-		else if (tempChar == '\b' && cmdBuf_idx > 0) {
-			input_cmdBuf[--cmdBuf_idx] = '\0';
-			_putch('\b');
-			_putch(' ');
-			_putch('\b');
+		else if (tempChar == '\b') {
+			if (cmdBufIdx > 0) {
+				input_cmdBuf[--cmdBufIdx] = '\0';
+				_putch('\b');
+				_putch(' ');
+				_putch('\b');
+			}
 		}
-		else {
-			input_cmdBuf[cmdBuf_idx++] = tempChar;
+		else if (0 <= tempChar && tempChar <= 127) {
+			input_cmdBuf[cmdBufIdx++] = tempChar;
 			_putch(tempChar);
 		}
+
 	} while (tempChar != '\r');
 
-	input_cmdBuf[cmdBuf_idx - 1] = '\0';
-
+	input_cmdBuf[cmdBufIdx - 1] = '\0';
+	printf("\n");
 }
 
 
 #else
-#include <curses.h>
-
 #define STRCPY strcpy
 #define STRTOK strtok_r
-
-void input_cmd(char* input_cmdBuf) {
-	int cmdBuf_idx = 0;
-	char tempChar;
-	do {
-		tempChar = getch();
-		if (cmdBuf_idx <= 0) {
-			cmdBuf_idx = 0;
-			input_cmdBuf[0] = '\0';
-		}
-		if (tempChar == '\t') {
-			bool stopIterFlag = false;
-			for (CLI_BLOCK* blockIter = CLI_BLOCK_HEAD; blockIter != NULL; blockIter = blockIter->next) {
-				for (int tabCmpIdx = 0; tabCmpIdx < strlen(blockIter->command); tabCmpIdx++) {
-					if (input_cmdBuf[tabCmpIdx] != blockIter->command[tabCmpIdx]) {
-						if (tabCmpIdx < cmdBuf_idx) {
-							break;
-						}
-						else {
-							stopIterFlag = true;
-							putchar(blockIter->command[tabCmpIdx]);
-							input_cmdBuf[cmdBuf_idx++] = blockIter->command[tabCmpIdx];
-						}
-					}
-				}
-				if (stopIterFlag) break;
-			}
-		}
-		else if (tempChar == '\b' && cmdBuf_idx > 0) {
-			input_cmdBuf[--cmdBuf_idx] = '\0';
-			putchar('\b');
-			putchar(' ');
-			putchar('\b');
-		}
-		else {
-			input_cmdBuf[cmdBuf_idx++] = tempChar;
-			putchar(tempChar);
-		}
-	} while (tempChar != '\r');
-
-	input_cmdBuf[cmdBuf_idx - 1] = '\0';
-}
 
 #endif
 
@@ -156,12 +112,12 @@ void CLI_GET_ARG(char* dest, int arg_index) {
 bool TERMINAL_CONTROL_CLI() {
 	char commandBuffer[CLI_ARG_BUFFER_SIZE];
 	std::cout << "esp cli >> ";
-	//#ifdef _WIN32
+#ifdef _WIN32
 	input_cmd(commandBuffer);
-	//#else
-	//	fgets(commandBuffer, CLI_ARG_BUFFER_SIZE, stdin);
-	//	commandBuffer[strlen(commandBuffer) - 1] = NULL;
-	//#endif
+#else
+	fgets(commandBuffer, CLI_ARG_BUFFER_SIZE, stdin);
+	commandBuffer[strlen(commandBuffer) - 1] = NULL;
+#endif
 	for (CLI_BLOCK* blockIter = CLI_BLOCK_HEAD; blockIter != NULL; blockIter = blockIter->next) {
 		if (command_cmp(blockIter->command, commandBuffer)) {
 			blockIter->cli_function();
