@@ -69,6 +69,7 @@ void input_cmd(char* input_cmdBuf) {
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 
 int getch() {
 	int c;
@@ -86,7 +87,7 @@ int getch() {
 }
 
 int putch(int c) {
-	struct termio o, n;
+	struct termios o, n;
 
 	ioctl(1, TCGETA, &o);
 	ioctl(1, TCGETA, &n);
@@ -103,47 +104,47 @@ int putch(int c) {
 }
 
 void input_cmd(char* input_cmdBuf) {
-	int cmdBufIdx = 0;
-	char tempChar;
-	do {
-		tempChar = _getch();
+        int cmdBufIdx = 0;
+        char tempChar;
+        do {
+                tempChar = getch();
 
-		if (tempChar == '\t') {
+                if (tempChar == '\t') {
 
-			bool stopIterFlag = false;
-			for (CLI_BLOCK* blockIter = CLI_BLOCK_HEAD; blockIter != NULL; blockIter = blockIter->next) {
-				for (int tabCmpIdx = 0; tabCmpIdx < strlen(blockIter->command); tabCmpIdx++) {
-					if (strncmp(input_cmdBuf, blockIter->command, cmdBufIdx) == 0) {
-						stopIterFlag = true;
-						for (int i = cmdBufIdx; i < strlen(blockIter->command); i++) {
-							if (blockIter->command[i] == ' ') break;
-							_putch(blockIter->command[i]);
-							input_cmdBuf[cmdBufIdx++] = blockIter->command[i];
-						}
-						break;
-					}
-				}
-				if (stopIterFlag) break;
-			}
+                        bool stopIterFlag = false;
+                        for (CLI_BLOCK* blockIter = CLI_BLOCK_HEAD; blockIter != NULL; blockIter = blockIter->next) {
+                                for (int tabCmpIdx = 0; tabCmpIdx < strlen(blockIter->command); tabCmpIdx++) {
+                                        if (strncmp(input_cmdBuf, blockIter->command, cmdBufIdx) == 0) {
+                                                stopIterFlag = true;
+                                                for (int i = cmdBufIdx; i < strlen(blockIter->command); i++) {
+                                                        if (blockIter->command[i] == ' ') break;
+                                                        putch(blockIter->command[i]);
+                                                        input_cmdBuf[cmdBufIdx++] = blockIter->command[i];
+                                                }
+                                                break;
+                                        }
+                                }
+                                if (stopIterFlag) break;
+                        }
 
-		}
-		else if (tempChar == '\b' || tempChar == 0x7f) {
-			if (cmdBufIdx > 0) {
-				input_cmdBuf[--cmdBufIdx] = '\0';
-				_putch('\b');
-				_putch(' ');
-				_putch('\b');
-			}
-		}
-		else if (0 <= tempChar && tempChar <= 127) {
-			input_cmdBuf[cmdBufIdx++] = tempChar;
-			_putch(tempChar);
-		}
+                }
+                else if (tempChar == '\b' || tempChar == 0x7f) {
+                        if (cmdBufIdx > 0) {
+                                input_cmdBuf[--cmdBufIdx] = '\0';
+                                putch('\b');
+                                putch(' ');
+                                putch('\b');
+                        }
+                }
+                else if (0 <= tempChar && tempChar <= 127) {
+                        input_cmdBuf[cmdBufIdx++] = tempChar;
+                        putch(tempChar);
+                }
 
-	} while (tempChar != '\n');
+        } while (tempChar != '\n');
 
-	input_cmdBuf[cmdBufIdx - 1] = '\0';
-	printf("\n");
+        input_cmdBuf[cmdBufIdx - 1] = '\0';
+        printf("\n");
 }
 #endif
 
