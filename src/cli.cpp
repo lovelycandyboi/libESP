@@ -66,7 +66,85 @@ void input_cmd(char* input_cmdBuf) {
 #else
 #define STRCPY strcpy
 #define STRTOK strtok_r
+#include <unistd.h>
+#include <termios.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+int getch() {
+	int c;
+	struct termios oldattr, newattr;
 
+	tcgetattr(STDIN_FILENO, &oldattr);
+	newattr = oldattr;
+	newattr.c_lflag &= ~(ICANON | ECHO);
+	newattr.c_cc[VMIN] = 1;
+	newattr.c_cc[VTIME] = 0;
+	tcsetattr(STDIN_FILENO, TCSANOW, &newattr);
+	c = getchar();
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldattr);
+	return c;
+}
+
+int putch(int c) {
+	struct termios o, n;
+
+	ioctl(1, TCGETA, &o);
+	ioctl(1, TCGETA, &n);
+
+	n.c_lflag &= ~(ICANON | ECHO);
+	ioctl(1, TCSETA, &n);
+
+	if (write(1, &c, 1) < 0)
+		return EOF;
+
+	ioctl(1, TCSETA, &o);
+
+	return c;
+}
+
+void input_cmd(char* input_cmdBuf) {
+	int cmdBufIdx = 0;
+	char tempChar;
+	do {
+		tempChar = getch();
+
+		if (tempChar == '\t') {
+
+			bool stopIterFlag = false;
+			for (CLI_BLOCK* blockIter = CLI_BLOCK_HEAD; blockIter != NULL; blockIter = blockIter->next) {
+				for (int tabCmpIdx = 0; tabCmpIdx < strlen(blockIter->command); tabCmpIdx++) {
+					if (strncmp(input_cmdBuf, blockIter->command, cmdBufIdx) == 0) {
+						stopIterFlag = true;
+						for (int i = cmdBufIdx; i < strlen(blockIter->command); i++) {
+							if (blockIter->command[i] == ' ') break;
+							putch(blockIter->command[i]);
+							input_cmdBuf[cmdBufIdx++] = blockIter->command[i];
+						}
+						break;
+					}
+				}
+				if (stopIterFlag) break;
+			}
+
+		}
+		else if (tempChar == '\b' || tempChar == 0x7f) {
+			if (cmdBufIdx > 0) {
+				input_cmdBuf[--cmdBufIdx] = '\0';
+				putch('\b');
+				putch(' ');
+				putch('\b');
+			}
+		}
+		else if (0 <= tempChar && tempChar <= 127) {
+			input_cmdBuf[cmdBufIdx++] = tempChar;
+			putch(tempChar);
+		}
+
+	} while (tempChar != '\n');
+
+	input_cmdBuf[cmdBufIdx - 1] = '\0';
+	printf("\n");
+}
 #endif
 
 
@@ -112,12 +190,8 @@ void CLI_GET_ARG(char* dest, int arg_index) {
 bool TERMINAL_CONTROL_CLI() {
 	char commandBuffer[CLI_ARG_BUFFER_SIZE];
 	std::cout << "esp cli >> ";
-#ifdef _WIN32
 	input_cmd(commandBuffer);
-#else
-	fgets(commandBuffer, CLI_ARG_BUFFER_SIZE, stdin);
-	commandBuffer[strlen(commandBuffer) - 1] = NULL;
-#endif
+
 	for (CLI_BLOCK* blockIter = CLI_BLOCK_HEAD; blockIter != NULL; blockIter = blockIter->next) {
 		if (command_cmp(blockIter->command, commandBuffer)) {
 			blockIter->cli_function();
