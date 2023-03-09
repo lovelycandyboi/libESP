@@ -31,7 +31,7 @@ bool TERMINAL_CONTROL_CLI();
 void CLI_BLOCK_INIT();
 
 bool command_cmp(char* curCmd, char* inputCmd);
-int tab_strcmp(char* curCmd, char* inputCmd);
+int  tab_strcmp(char* curCmd, char* inputCmd);
 void input_cmd(char* input_cmdBuf);
 
 void hexStr2int(char* src, int* dst);
