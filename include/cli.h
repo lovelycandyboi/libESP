@@ -25,10 +25,15 @@
 			CLI_BLOCK_ADD(CLI_BLOCK_HEAD, &cli_##function##_block);						\
 		}while(0)
 
-void CLI_GET_ARG(char* dest, int arg_index);
+#define CLI_ARG_BUFFER_SIZE 100
+
 bool TERMINAL_CONTROL_CLI();
 void CLI_BLOCK_INIT();
+
 bool command_cmp(char* curCmd, char* inputCmd);
+int  tab_strcmp(char* curCmd, char* inputCmd);
+void input_cmd(char* input_cmdBuf);
+
 void hexStr2int(char* src, int* dst);
 void decStr2int(char* src, int* dst);
 
@@ -37,5 +42,6 @@ typedef struct _CLI_BLOCK {
 	void (*cli_function)(void);
 	char command[100];
 }CLI_BLOCK;
+
 
 #endif
