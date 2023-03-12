@@ -1,11 +1,7 @@
-#include <string>
-#include <cstring>
-#include <stdint.h>
 #include <stdio.h>
-#include <iostream>
-#include <vector>
 #include "../include/cli.h"
 #include "../include/util.h"
+
 
 CLI_BLOCK* CLI_BLOCK_HEAD = NULL;
 char VV_stringArgs[10][CLI_ARG_BUFFER_SIZE];

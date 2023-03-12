@@ -2,7 +2,6 @@
 * author: lovelycandyboi
 * github: https://github.com/lovelycandyboi
 */
-#include <iostream>
 #include <stdio.h>
 #include <string.h>
 #include "./include/cli.h"

@@ -2,11 +2,19 @@
 #define __AES_H__
 
 #include "../include/util.h"
-class aes {
+class aes128 {
 private:
-    byte plainTextBlock[4][4];
-    byte aesKeyBlock[4][4];
+    byte plainTextBlock[4][4] = { 0, };
+    byte aesKeyBlock[4][4] = { 0, };
+    byte roundKey[11][4][4] = { 0, };
+    byte cipherTextBlock[4][4] = { 0, };
 public:
+    aes128() {
+        this->input_massage();
+        this->input_key();
+        this->key_scheduling(this->aesKeyBlock, this->roundKey);
+    }
+
     const byte sbox[16][16] = {
     {0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76},
     {0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0},
@@ -85,18 +93,19 @@ public:
     void key_scheduling(byte(*key)[4], byte(*roundKey)[4][4]);
     word G(word inputWord, int roundNumb);
 
-    void encrypt(byte(*cipherText)[4], byte(*roundKey)[4][4]);
-    void AES_encryption(byte(*plainText)[4], byte(*key)[4]);
+    byte** encrypt(byte(*cipherText)[4], byte(*roundKey)[4][4]);
+    void AES_encryption();
 
-    void decrypt(byte(*cipherText)[4], byte(*roundKey)[4][4]);
-    void AES_decryption(byte(*plainText)[4], byte(*key)[4]);
+    byte** decrypt(byte(*cipherText)[4], byte(*roundKey)[4][4]);
+    void AES_decryption();
 
     void input_massage();
     void input_key();
     void print_massage();
     void print_key();
 
-    void test_aes();
+    byte* get_plainTextBlock();
+    byte* get_cipherTextBlock();
 };
 
 #endif

@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
-#include <iostream>
 #include "../include/cli.h"
-#include "../include/util.h"
 #include "../crypto/aes.h"
 
 extern CLI_BLOCK* CLI_BLOCK_HEAD;
@@ -105,10 +102,19 @@ DEF_CLI(Euler_phi, "test euler VV") {
 }
 
 DEF_CLI(AES128_test, "test AES") {
-	aes test;
-	test.test_aes();
-	getchar();
+	aes128* test = new aes128();
+	test->AES_encryption();
+
+	byte cipherText[16];
+	memcpy(cipherText, test->get_cipherTextBlock(), sizeof(byte) * 16);
+	
+	byte plainText[16];
+	memcpy(plainText, test->get_plainTextBlock(), sizeof(byte) * 16);
+	
+	for (int i = 0; i < 16; i++)	printf("%c", cipherText[i]);	printf("\n");
+	for (int i = 0; i < 16; i++)	printf("%c", plainText[i]);	printf("\n");
 }
+
 /*
 DEF_CLI(AES128_test_cmd, "aes VV with VV") {
 
@@ -138,7 +144,6 @@ DEF_CLI(AES128_test_cmd, "aes VV with VV") {
 
 }
 */
-
 
 DEF_CLI(fft_test, "test fft") {
 	string str1, str2;
