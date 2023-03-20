@@ -112,7 +112,7 @@ DEF_CLI(AES128_test, "test AES") {
 	memcpy(plainText, test->get_plainTextBlock(), sizeof(byte) * 16);
 	
 	for (int i = 0; i < 16; i++)	printf("%c", cipherText[i]);	printf("\n");
-	for (int i = 0; i < 16; i++)	printf("%c", plainText[i]);	printf("\n");
+	for (int i = 0; i < 16; i++)	printf("%c", plainText[i]);		printf("\n");
 }
 
 /*

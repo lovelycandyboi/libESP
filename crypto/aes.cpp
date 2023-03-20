@@ -29,11 +29,10 @@ void aes128::mix_columns(byte(*cipherText)[4]) {
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             tempResult[i][j] = 0;
-            for (int k = 0; k < 4; k++) tempResult[i][j] ^= Galua_mul(constantMatrix[i][k], cipherText[k][j]) % 0b100011011;
+            for (int k = 0; k < 4; k++)
+                tempResult[i][j] ^= Galua_mul(constantMatrix[i][k], cipherText[k][j]) % 0b100011011;
         }
     }
-
-
     memcpy(cipherText, tempResult, sizeof(tempResult));
 }
 
@@ -73,16 +72,13 @@ word aes128::G(word inputWord, int roundNumb) {
     //=============================================================================================RotWord
     word outputWord = inputWord;
     circuitShift_left(outputWord, 1);
-
     //=============================================================================================SubWord
     byte temp[4];
     div_Word_To_4bytes(outputWord, temp);
-    for (int i = 0; i < 4; i++) { temp[i] = sbox[(temp[i] & 0xF0) >> 4][temp[i] & 0x0F]; }
-
-    //=============================================================================================addRcon     
+    for (int i = 0; i < 4; i++) temp[i] = sbox[(temp[i] & 0xF0) >> 4][temp[i] & 0x0F];
+    //=============================================================================================addRcon
     union_4bytes_To_Word(temp, outputWord);
     outputWord ^= Rcond[roundNumb];
-
     return outputWord;
 }
 
@@ -173,4 +169,10 @@ byte* aes128::get_cipherTextBlock() {
     byte return_cipherText[16];
     memcpy(return_cipherText, this->cipherTextBlock, sizeof(byte) * 16);
     return (byte*)return_cipherText;
+}
+
+byte* aes128::get_aesKeyBlock() {
+    byte return_aesKeyBlock[16];
+    memcpy(return_aesKeyBlock, this->cipherTextBlock, sizeof(byte) * 16);
+    return (byte*)return_aesKeyBlock;
 }

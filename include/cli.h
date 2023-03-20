@@ -42,6 +42,28 @@ typedef struct _CLI_BLOCK {
 	void (*cli_function)(void);
 	char command[100];
 }CLI_BLOCK;
+typedef struct CMD_NODE {
+	char   charData;
+	struct CMD_NODE* prev;
+	struct CMD_NODE* next;
+}CMD_NODE;
+typedef struct CMD_STR {
+	CMD_NODE* head;
+	CMD_NODE* cursor;
+	CMD_NODE* tail;
+	void init() {
+		this->head = NULL;
+		this->cursor = NULL;
+		this->tail = NULL;
+	}
+}CMD_STR;
+
+CMD_NODE* create_CMD_NODE(char data);
+void first_insert(CMD_STR* cmdBuf_List, char data);
+void insert_after(CMD_STR* cmdBuf_List, CMD_NODE* cur_NODE, char data);
+void insert_before_head(CMD_STR* cmdBuf_List, char data);
+void list_insert(CMD_STR* cmdBuf_List, CMD_NODE* cur_NODE, char data);
+void delete_CMD_NODE(CMD_NODE** head, CMD_NODE* DEL_NODE);
 
 
 #endif

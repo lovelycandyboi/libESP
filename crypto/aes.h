@@ -106,6 +106,7 @@ public:
 
     byte* get_plainTextBlock();
     byte* get_cipherTextBlock();
+    byte* get_aesKeyBlock();
 };
 
 #endif
