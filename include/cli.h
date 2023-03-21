@@ -2,6 +2,10 @@
 #define __CLI_H___
 
 #include <stdint.h>
+#define TAB_KEY			'\t'
+#define BAKC_SPACE_KEY	'\b'
+#define LEFT_ARROW_KEY	 75
+#define RIGHT_ARROW_KEY  77
 
 #define CLI_BLOCK_ADD(head, block)														\
 		do{																				\

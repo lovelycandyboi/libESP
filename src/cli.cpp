@@ -12,11 +12,11 @@ bool quitFlag = false;
 #include <windows.h>
 #define STRCPY strcpy_s
 #define STRTOK strtok_s
-#define end_Key '\r'
+#define END_KEY '\r'
 #else
 #define STRCPY strcpy
 #define STRTOK strtok_r
-#define end_Key	'\n'
+#define END_KEY	'\n'
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
@@ -175,39 +175,38 @@ void input_cmd(char* input_cmdBuf) {
 	int cmdBufIdx = 0;
 	do {
 		tempChar = _getch();
-		if (tempChar == end_Key) break;
-		else if (tempChar == '\t') {
-			{
-				cmdBufIdx = 0;
-				for (CMD_NODE* cmdIter = cmdBuf_List->head; cmdIter != NULL; cmdIter = cmdIter->next) {
-					input_cmdBuf[cmdBufIdx++] = cmdIter->charData;
-				}
-				input_cmdBuf[cmdBufIdx] = '\0';
-				for (CLI_BLOCK* blockIter = CLI_BLOCK_HEAD; blockIter != NULL; blockIter = blockIter->next) {
-					int tabCmpIdx = tab_strcmp(blockIter->command, input_cmdBuf);
-					if (tabCmpIdx != -1) {
-						if (cmdBufIdx > 0 && input_cmdBuf[cmdBufIdx - 1] != ' ' && tabCmpIdx > 0 && blockIter->command[tabCmpIdx - 1] == ' ') {
-							_putch(' ');
-							list_insert(cmdBuf_List, cmdBuf_List->cursor, ' ');
-						}
-
-						for (int autoMakeIdx = tabCmpIdx; autoMakeIdx < strlen(blockIter->command)&& blockIter->command[autoMakeIdx] != ' '; autoMakeIdx++) {
-							_putch(blockIter->command[autoMakeIdx]);
-							list_insert(cmdBuf_List, cmdBuf_List->cursor, blockIter->command[autoMakeIdx]);
-						}
-						break;
-					}
-				}
-
+		switch (tempChar) {
+		case END_KEY:
+			break;
+		case TAB_KEY:
+		{
+			cmdBufIdx = 0;
+			for (CMD_NODE* cmdIter = cmdBuf_List->head; cmdIter != NULL; cmdIter = cmdIter->next) {
+				input_cmdBuf[cmdBufIdx++] = cmdIter->charData;
 			}
+			input_cmdBuf[cmdBufIdx] = '\0';
+			for (CLI_BLOCK* blockIter = CLI_BLOCK_HEAD; blockIter != NULL; blockIter = blockIter->next) {
+				int tabCmpIdx = tab_strcmp(blockIter->command, input_cmdBuf);
+				if (tabCmpIdx != -1) {
+					if (cmdBufIdx > 0 && input_cmdBuf[cmdBufIdx - 1] != ' ' && tabCmpIdx > 0 && blockIter->command[tabCmpIdx - 1] == ' ') {
+						_putch(' ');
+						list_insert(cmdBuf_List, cmdBuf_List->cursor, ' ');
+					}
+					for (int autoMakeIdx = tabCmpIdx; autoMakeIdx < strlen(blockIter->command) && blockIter->command[autoMakeIdx] != ' '; autoMakeIdx++) {
+						_putch(blockIter->command[autoMakeIdx]);
+						list_insert(cmdBuf_List, cmdBuf_List->cursor, blockIter->command[autoMakeIdx]);
+					}
+					break;
+				}
+			}
+			break;
 		}
-		else if (tempChar == '\b') {
+		case BAKC_SPACE_KEY:
 			if (cmdBuf_List->cursor != NULL) {
 				CMD_NODE* toBeDeleted = cmdBuf_List->cursor;
 				cmdBuf_List->cursor = cmdBuf_List->cursor->prev;
 				delete_CMD_NODE(&cmdBuf_List->head, toBeDeleted);
 				printf("\b \b");
-
 				int cursorShift_cnt = 0;
 				if (cmdBuf_List->cursor != NULL) {
 					for (CMD_NODE* cmdIter = cmdBuf_List->cursor->next; cmdIter != NULL; cmdIter = cmdIter->next) {
@@ -220,31 +219,32 @@ void input_cmd(char* input_cmdBuf) {
 					}
 				}
 			}
-
-		}
-
-		else if (tempChar == 0 || tempChar == -32) {
+			break;
+		case -32:
 			tempChar = _getch();
-			if (tempChar == 75 ) { // Left arrow key
+			if (tempChar == LEFT_ARROW_KEY) {
 				if (cmdBuf_List->cursor != NULL && cmdBuf_List->cursor->prev != NULL) {
 					cmdBuf_List->cursor = cmdBuf_List->cursor->prev;
 					printf("\033[1D");
 				}
 				else if (cmdBuf_List->cursor == cmdBuf_List->head) {
-					cmdBuf_List->cursor = cmdBuf_List->head->prev; //cursor is NULL
+					cmdBuf_List->cursor = NULL;
 					printf("\033[1D");
 				}
 			}
-			else if (tempChar == 77) { // Right arrow key
+			else if (tempChar == RIGHT_ARROW_KEY) {
 				if (cmdBuf_List->cursor != NULL && cmdBuf_List->cursor->next != NULL) {
 					cmdBuf_List->cursor = cmdBuf_List->cursor->next;
 					printf("\033[1C");
 				}
+				else if (cmdBuf_List->cursor == NULL && cmdBuf_List->head != NULL) {
+					cmdBuf_List->cursor = cmdBuf_List->head;
+					printf("\033[1C");
+				}
 			}
-		}
-
-		else {
-			if (cmdBuf_List->cursor == NULL &&  cmdBuf_List->head != NULL) {
+			break;
+		default:
+			if (cmdBuf_List->cursor == NULL && cmdBuf_List->head != NULL) {
 				insert_before_head(cmdBuf_List, tempChar);
 				cmdBuf_List->cursor = cmdBuf_List->head;
 				cmdBuf_List->cursor->prev = cmdBuf_List->head->prev;
@@ -259,9 +259,11 @@ void input_cmd(char* input_cmdBuf) {
 			if (cursurShift_cnt > 1) {
 				printf("\033[%dD", cursurShift_cnt - 1);
 			}
-		}
+			break;
 
-	} while (tempChar != end_Key);
+		}
+	} while (tempChar != END_KEY);
+
 	printf("\n");
 
 	cmdBufIdx = 0;
