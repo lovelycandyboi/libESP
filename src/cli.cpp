@@ -90,16 +90,18 @@ void insert_before_head(CMD_STR* cmdBuf_List, char data) {
 	cmdBuf_List->head->prev = new_CMD_NODE->prev;
 	cmdBuf_List->head->next = new_CMD_NODE->next;
 }
+
 void list_insert(CMD_STR* cmdBuf_List, CMD_NODE* cur_NODE, char data) {
-	if (cmdBuf_List->head == NULL)	first_insert(cmdBuf_List, data);
+	if (cmdBuf_List->head == NULL)	first_insert(cmdBuf_List, data);	
 	else							insert_after(cmdBuf_List, cur_NODE, data);
 }
 
-void delete_CMD_NODE(CMD_NODE** head, CMD_NODE* DEL_NODE) {
-	if (*head == NULL || DEL_NODE == NULL)  return;
-	if (*head == DEL_NODE)					*head = DEL_NODE->next;
-	if (DEL_NODE->next != NULL)             DEL_NODE->next->prev = DEL_NODE->prev;
-	if (DEL_NODE->prev != NULL)             DEL_NODE->prev->next = DEL_NODE->next;
+void delete_CMD_NODE(CMD_STR* cmdBuf_List, CMD_NODE* DEL_NODE) {
+	if (cmdBuf_List->head == NULL || DEL_NODE == NULL)  return;
+	if (cmdBuf_List->head == DEL_NODE)					cmdBuf_List->head = DEL_NODE->next;
+	if (DEL_NODE->next != NULL)							DEL_NODE->next->prev = DEL_NODE->prev;
+	if (DEL_NODE->prev != NULL)							DEL_NODE->prev->next = DEL_NODE->next;
+	if (DEL_NODE == cmdBuf_List->tail)					cmdBuf_List->tail = DEL_NODE->prev;
 	free(DEL_NODE);
 }
 
@@ -205,11 +207,21 @@ void input_cmd(char* input_cmdBuf) {
 			if (cmdBuf_List->cursor != NULL) {
 				CMD_NODE* toBeDeleted = cmdBuf_List->cursor;
 				cmdBuf_List->cursor = cmdBuf_List->cursor->prev;
-				delete_CMD_NODE(&cmdBuf_List->head, toBeDeleted);
+				delete_CMD_NODE(cmdBuf_List, toBeDeleted);
 				printf("\b \b");
 				int cursorShift_cnt = 0;
 				if (cmdBuf_List->cursor != NULL) {
 					for (CMD_NODE* cmdIter = cmdBuf_List->cursor->next; cmdIter != NULL; cmdIter = cmdIter->next) {
+						_putch(cmdIter->charData);
+						cursorShift_cnt++;
+					}
+					printf(" \b \b");
+					if (cursorShift_cnt > 0) {
+						printf("\033[%dD", cursorShift_cnt);
+					}
+				}
+				if (cmdBuf_List->cursor == NULL && cmdBuf_List->head != NULL) {
+					for (CMD_NODE* cmdIter = cmdBuf_List->head; cmdIter != NULL; cmdIter = cmdIter->next) {
 						_putch(cmdIter->charData);
 						cursorShift_cnt++;
 					}
@@ -247,8 +259,6 @@ void input_cmd(char* input_cmdBuf) {
 			if (cmdBuf_List->cursor == NULL && cmdBuf_List->head != NULL) {
 				insert_before_head(cmdBuf_List, tempChar);
 				cmdBuf_List->cursor = cmdBuf_List->head;
-				cmdBuf_List->cursor->prev = cmdBuf_List->head->prev;
-				cmdBuf_List->cursor->next = cmdBuf_List->head->next;
 			}
 			else list_insert(cmdBuf_List, cmdBuf_List->cursor, tempChar);
 			int cursurShift_cnt = 0;
