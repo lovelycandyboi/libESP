@@ -67,7 +67,7 @@ void first_insert(CMD_STR* cmdBuf_List, char data);
 void insert_after(CMD_STR* cmdBuf_List, CMD_NODE* cur_NODE, char data);
 void insert_before_head(CMD_STR* cmdBuf_List, char data);
 void list_insert(CMD_STR* cmdBuf_List, CMD_NODE* cur_NODE, char data);
-void delete_CMD_NODE(CMD_NODE** head, CMD_NODE* DEL_NODE);
+void delete_CMD_NODE(CMD_STR* cmdBuf_List, CMD_NODE* DEL_NODE);
 
 
 #endif
