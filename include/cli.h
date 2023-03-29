@@ -2,11 +2,21 @@
 #define __CLI_H___
 
 #include <stdint.h>
+#ifdef _WIN32
+#define END_KEY			'\r'
 #define TAB_KEY			'\t'
 #define BAKC_SPACE_KEY	'\b'
+#define ARROW_ENTRY		-32
 #define LEFT_ARROW_KEY	 75
 #define RIGHT_ARROW_KEY  77
-
+#else
+#define END_KEY			'\n'
+#define TAB_KEY			'\t'
+#define BAKC_SPACE_KEY	'\177'
+#define ARROW_ENTRY		 27
+#define LEFT_ARROW_KEY	 68
+#define RIGHT_ARROW_KEY  67
+#endif
 #define CLI_BLOCK_ADD(head, block)														\
 		do{																				\
 			if(head == NULL){															\

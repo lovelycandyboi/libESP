@@ -8,15 +8,17 @@ int VV_stringArgsNumb = 0;
 bool quitFlag = false;
 
 #ifdef _WIN32
+
 #include <conio.h>
 #include <windows.h>
 #define STRCPY strcpy_s
 #define STRTOK strtok_s
-#define END_KEY '\r'
+
 #else
+
 #define STRCPY strcpy
 #define STRTOK strtok_r
-#define END_KEY	'\n'
+
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
@@ -208,7 +210,11 @@ void input_cmd(char* input_cmdBuf) {
 				CMD_NODE* toBeDeleted = cmdBuf_List->cursor;
 				cmdBuf_List->cursor = cmdBuf_List->cursor->prev;
 				delete_CMD_NODE(cmdBuf_List, toBeDeleted);
-				printf("\b \b");
+				
+				_putch('\b');
+				_putch(' ');
+				_putch('\b');
+				
 				int cursorShift_cnt = 0;
 				if (cmdBuf_List->cursor != NULL) {
 					for (CMD_NODE* cmdIter = cmdBuf_List->cursor->next; cmdIter != NULL; cmdIter = cmdIter->next) {
@@ -232,8 +238,11 @@ void input_cmd(char* input_cmdBuf) {
 				}
 			}
 			break;
-		case -32:
+		case ARROW_ENTRY:
 			tempChar = _getch();
+#ifndef _WIN32
+			tempChar = _getch();
+#endif
 			if (tempChar == LEFT_ARROW_KEY) {
 				if (cmdBuf_List->cursor != NULL && cmdBuf_List->cursor->prev != NULL) {
 					cmdBuf_List->cursor = cmdBuf_List->cursor->prev;
