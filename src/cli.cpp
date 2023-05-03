@@ -135,7 +135,6 @@ int  tab_strcmp(char* curCmd, char* inputCmd) {
 	}
 
 	return curCmdIdx + tokcnt;
-
 }
 bool command_cmp(char* curCmd, char* inputCmd) {
 	VV_stringArgsNumb = 0;
@@ -164,11 +163,13 @@ bool command_cmp(char* curCmd, char* inputCmd) {
 			}
 		}
 
-		curCmdIter = STRTOK(NULL, " ", &curContext);
+		curCmdIter   = STRTOK(NULL, " ", &curContext);
 		inputCmdIter = STRTOK(NULL, " ", &inputContext);
 	}
 
-	if (curCmdIter != NULL || inputCmdIter != NULL)	isMatched = false;
+	if (curCmdIter != NULL || inputCmdIter != NULL)
+		isMatched = false;
+	
 	return isMatched;
 }
 

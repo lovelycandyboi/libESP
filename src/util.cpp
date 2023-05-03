@@ -1,8 +1,16 @@
 #include "../include/util.h"
 
-byte Galua_mul(byte a, byte b) {
-    int result = (a & 1) * b;
-    for (int i = 1; i < 8; i++) result ^= ((a & (1 << i)) * b);
+uint8_t Galua_mul(uint8_t a, uint8_t b) {
+    uint8_t result = 0;
+
+    for (int i = 0; i < 8; i++) {
+        if (b & 1) result ^= a;
+        uint8_t msb = a & 0x80;
+        a <<= 1;
+        if (msb) a ^= 0x1b; // Reduction polynomial for GF(2^8)
+        b >>= 1;
+    }
+
     return result;
 }
 

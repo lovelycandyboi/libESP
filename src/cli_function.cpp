@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "../include/cli.h"
 #include "../crypto/aes.h"
+#include "../crypto/aes256ctr.h"
 
 extern CLI_BLOCK* CLI_BLOCK_HEAD;
 extern char VV_stringArgs[10][CLI_ARG_BUFFER_SIZE];
@@ -115,35 +116,6 @@ DEF_CLI(AES128_test, "test AES") {
 	for (int i = 0; i < 16; i++)	printf("%c", plainText[i]);		printf("\n");
 }
 
-/*
-DEF_CLI(AES128_test_cmd, "aes VV with VV") {
-
-	const char* textFileName = VV_stringArgs[0];
-	const char* keyFileName  = VV_stringArgs[1];
-
-	byte plainTextBlock[4][4] = { 0 };
-	byte aesKeyBlock[4][4] = { 0 };
-
-	std::ifstream textInputFile(textFileName);	std::ifstream keyInputFile(keyFileName);
-	if (!textInputFile.is_open())	{ printf("%s is not exist!\n", textFileName);	return;	}
-	if (!keyInputFile.is_open())	{ printf("%s is not exist!\n", keyFileName);	return;	}
-	for (int r = 0; r < 4; r++)	for (int c = 0; c < 4; c++)	textInputFile >> plainTextBlock[r][c];
-	for (int r = 0; r < 4; r++)	for (int c = 0; c < 4; c++)	keyInputFile >> aesKeyBlock[r][c];
-	textInputFile.close(); keyInputFile.close();
-
-	printf("before aes128 encrypt->");
-	for (int r = 0; r < 4; r++)	for (int c = 0; c < 4; c++)	printf("%c", plainTextBlock[r][c]);	printf("\n");
-
-	AES_encryption(plainTextBlock, aesKeyBlock);
-	printf("aes128 encrypt result->");
-	for (int r = 0; r < 4; r++)	for (int c = 0; c < 4; c++)	printf("%c", plainTextBlock[r][c]);	printf("\n");
-
-	AES_decryption(plainTextBlock, aesKeyBlock);
-	printf("aes128 decrypt result->");
-	for (int r = 0; r < 4; r++)	for (int c = 0; c < 4; c++)	printf("%c", plainTextBlock[r][c]);	printf("\n");
-
-}
-*/
 
 DEF_CLI(fft_test, "test fft") {
 	string str1, str2;
@@ -179,6 +151,74 @@ DEF_CLI(fft_test, "test fft") {
 	return;
 }
 
+DEF_CLI(gcm_mode, "test_aes256 gcm_mode") {
+	const size_t BLOCK_SIZE = 64;
+	const size_t NUM_BLOCKS = 2;
+
+	aes256gcm_key_set   x = { {0,},{0,},0 };                                            // key[32], nonce[12], stream_key
+	aes256gcm_ghash_set g = { {0,},{0,},{0, }, {0, }, 0 };                              // Ghash[32], enc_tag_result[32], dec_tag_result[32], ad[32][4], ad_size
+	g.ad_size = 40;
+	const size_t outlen = NUM_BLOCKS * BLOCK_SIZE + 132;                                // output size is the number of blocks times block size
+	uint8_t testText[outlen] = { 0, };
+	x.stream_key = (uint8_t*)malloc(outlen * sizeof(uint8_t));                          // Allocate memory for the output keyStream
+	g.ad = (uint8_t*)malloc(g.ad_size * sizeof(uint8_t));
+
+	for (int i = 0; i < outlen; i++) {
+		testText[i] = i;
+	}
+	printf("plainText messgae:\n");
+	for (int i = 0; i < outlen; i++)    printf("%02x ", testText[i]);
+	printf("\n\n");
+
+	aes256gcm_ctx state;
+
+	aes256gcm_init(&state, x.key, x.nonce);
+	printf("Ghash init before:\n");
+	for (int i = 0; i < AES256gcm_HASHBYTES; i++)
+		printf("%02x ", g.Ghash[i]);
+	printf("\n\n");
+
+
+
+	aes256gcm_prf(g.Ghash, AES256gcm_HASHBYTES, x.key, x.nonce); //initial Ghash_tag && key expansion
+	printf("Ghash init after:\n");
+	for (int i = 0; i < AES256gcm_HASHBYTES; i++)
+		printf("%02x ", g.Ghash[i]);
+	printf("\n\n");
+
+
+
+	aes256gcm_squeezeblocks(x.stream_key, outlen, &state);
+	printf("Keystream:\n");
+	for (int i = 0; i < outlen; i++)    printf("%02x ", x.stream_key[i]);
+	printf("\n\n");
+
+
+
+	aes256gcm_encrypt(testText, x.stream_key, outlen, &g); // Encrypt the output
+	printf("Encrypted text:\n");
+	for (int i = 0; i < outlen; i++)    printf("%02x ", testText[i]);
+	printf("\n\n");
+	printf("after enc Ghash:\n");
+	for (int i = 0; i < AES256gcm_HASHBYTES; i++)
+		printf("%02x ", g.enc_tag_result[i]);
+	printf("\n\n");
+
+
+	if (aes256gcm_decrypt(testText, x.stream_key, outlen, &g)) {
+		printf("Decrypted text:\n");
+		for (int i = 0; i < outlen; i++) printf("%02x ", testText[i]);
+		printf("\n\n");
+	}
+	printf("after dec Ghash:\n");
+	for (int i = 0; i < AES256gcm_HASHBYTES; i++)
+		printf("%02x ", g.dec_tag_result[i]);
+	printf("\n\n");
+
+	free(x.stream_key);
+	free(g.ad);
+}
+
 DEF_CLI(exit, "exit") {
 	quitFlag = true;
 }
@@ -189,8 +229,8 @@ void CLI_BLOCK_INIT() {
 	ADD_CLI(Euler_phi_function);
 	ADD_CLI(Euler_phi);
 	ADD_CLI(AES128_test);
-	//ADD_CLI(AES128_test_cmd);
 	ADD_CLI(fft_test);
+	ADD_CLI(gcm_mode);
 	ADD_CLI(exit);
 }
 

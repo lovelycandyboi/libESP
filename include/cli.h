@@ -51,8 +51,8 @@ void input_cmd(char* input_cmdBuf);
 void hexStr2int(char* src, int* dst);
 void decStr2int(char* src, int* dst);
 
-typedef struct _CLI_BLOCK {
-	struct _CLI_BLOCK* next;
+typedef struct CLI_BLOCK {
+	struct CLI_BLOCK* next;
 	void (*cli_function)(void);
 	char command[100];
 }CLI_BLOCK;
