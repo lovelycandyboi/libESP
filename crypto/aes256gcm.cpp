@@ -1,14 +1,20 @@
 
-#include <stdio.h>
+/*
+* This code was written based on the reference code for CTR mode and the TTA standard interpretation for GCM mode.
+* The encryption process was adapted from the reference code,
+* and the generation of the GHASH was adapted from the TTA standard interpretation.
+* To see an example of how to use the library, please refer to gcm_main.c.
+* =================================================================================================================
+* 이 코드는 레퍼런스 코드의 ctr_mode 와 TTA의 표준 해설서 를 참고하여 작성되었습니다.
+* 암호화 과정은 레퍼런스 코드를 따왔으며, ghash생성 과정은 TTA의 표준 해설서에서 따왔습니다.
+* gcm 라이브러리의 사용 예시를 보려면 gcm_main.c를 확인하세요.
+*/
 
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
-#include "aes256ctr.h"
+#include "aes256gcm.h"
 
-
-
-static inline uint32_t br_dec32le(const uint8_t *src)
+static inline uint32_t br_dec32le(const uint8_t* src)
 {
 	return (uint32_t)src[0]
 		| ((uint32_t)src[1] << 8)
@@ -16,10 +22,10 @@ static inline uint32_t br_dec32le(const uint8_t *src)
 		| ((uint32_t)src[3] << 24);
 }
 
-static void br_range_dec32le(uint32_t *v, size_t num, const uint8_t *src)
+static void br_range_dec32le(uint32_t* v, size_t num, const uint8_t* src)
 {
 	while (num-- > 0) {
-		*v ++ = br_dec32le(src);
+		*v++ = br_dec32le(src);
 		src += 4;
 	}
 }
@@ -31,7 +37,7 @@ static inline uint32_t br_swap32(uint32_t x)
 	return (x << 16) | (x >> 16);
 }
 
-static inline void br_enc32le(uint8_t *dst, uint32_t x)
+static inline void br_enc32le(uint8_t* dst, uint32_t x)
 {
 	dst[0] = (uint8_t)x;
 	dst[1] = (uint8_t)(x >> 8);
@@ -39,15 +45,15 @@ static inline void br_enc32le(uint8_t *dst, uint32_t x)
 	dst[3] = (uint8_t)(x >> 24);
 }
 
-static void br_range_enc32le(uint8_t *dst, const uint32_t *v, size_t num)
+static void br_range_enc32le(uint8_t* dst, const uint32_t* v, size_t num)
 {
 	while (num-- > 0) {
-		br_enc32le(dst, *v ++);
+		br_enc32le(dst, *v++);
 		dst += 4;
 	}
 }
 
-static void br_aes_ct64_bitslice_Sbox(uint64_t *q)
+static void br_aes_ct64_bitslice_Sbox(uint64_t* q)
 {
 	/*
 	 * This S-box implementation is a straightforward translation of
@@ -222,7 +228,7 @@ static void br_aes_ct64_bitslice_Sbox(uint64_t *q)
 	q[0] = s7;
 }
 
-static void br_aes_ct64_ortho(uint64_t *q)
+static void br_aes_ct64_ortho(uint64_t* q)
 {
 #define SWAPN(cl, ch, s, x, y)   do { \
 		uint64_t a, b; \
@@ -252,7 +258,7 @@ static void br_aes_ct64_ortho(uint64_t *q)
 	SWAP8(q[3], q[7]);
 }
 
-static void br_aes_ct64_interleave_in(uint64_t *q0, uint64_t *q1, const uint32_t *w)
+static void br_aes_ct64_interleave_in(uint64_t* q0, uint64_t* q1, const uint32_t* w)
 {
 	uint64_t x0, x1, x2, x3;
 
@@ -280,7 +286,7 @@ static void br_aes_ct64_interleave_in(uint64_t *q0, uint64_t *q1, const uint32_t
 	*q1 = x1 | (x3 << 8);
 }
 
-static void br_aes_ct64_interleave_out(uint32_t *w, uint64_t q0, uint64_t q1)
+static void br_aes_ct64_interleave_out(uint32_t* w, uint64_t q0, uint64_t q1)
 {
 	uint64_t x0, x1, x2, x3;
 
@@ -318,7 +324,7 @@ static uint32_t sub_word(uint32_t x)
 	return (uint32_t)q[0];
 }
 
-static void br_aes_ct64_keysched(uint64_t *comp_skey, const uint8_t *key)
+static void br_aes_ct64_keysched(uint64_t* comp_skey, const uint8_t* key)
 {
 	int i, j, k, nk, nkf;
 	uint32_t tmp;
@@ -330,18 +336,19 @@ static void br_aes_ct64_keysched(uint64_t *comp_skey, const uint8_t *key)
 	nkf = (int)((14 + 1) << 2);
 	br_range_dec32le(skey, (key_len >> 2), key);
 	tmp = skey[(key_len >> 2) - 1];
-	for (i = nk, j = 0, k = 0; i < nkf; i ++) {
+	for (i = nk, j = 0, k = 0; i < nkf; i++) {
 		if (j == 0) {
 			tmp = (tmp << 24) | (tmp >> 8);
 			tmp = sub_word(tmp) ^ Rcon[k];
-		} else if (nk > 6 && j == 4) {
+		}
+		else if (nk > 6 && j == 4) {
 			tmp = sub_word(tmp);
 		}
 		tmp ^= skey[i - nk];
 		skey[i] = tmp;
-		if (++ j == nk) {
+		if (++j == nk) {
 			j = 0;
-			k ++;
+			k++;
 		}
 	}
 
@@ -357,24 +364,24 @@ static void br_aes_ct64_keysched(uint64_t *comp_skey, const uint8_t *key)
 		q[7] = q[4];
 		br_aes_ct64_ortho(q);
 		comp_skey[j + 0] =
-			  (q[0] & (uint64_t)0x1111111111111111)
+			(q[0] & (uint64_t)0x1111111111111111)
 			| (q[1] & (uint64_t)0x2222222222222222)
 			| (q[2] & (uint64_t)0x4444444444444444)
 			| (q[3] & (uint64_t)0x8888888888888888);
 		comp_skey[j + 1] =
-			  (q[4] & (uint64_t)0x1111111111111111)
+			(q[4] & (uint64_t)0x1111111111111111)
 			| (q[5] & (uint64_t)0x2222222222222222)
 			| (q[6] & (uint64_t)0x4444444444444444)
 			| (q[7] & (uint64_t)0x8888888888888888);
 	}
 }
 
-static void br_aes_ct64_skey_expand(uint64_t *skey, const uint64_t *comp_skey)
+static void br_aes_ct64_skey_expand(uint64_t* skey, const uint64_t* comp_skey)
 {
 	unsigned u, v, n;
 
 	n = (14 + 1) << 1;
-	for (u = 0, v = 0; u < n; u ++, v += 4) {
+	for (u = 0, v = 0; u < n; u++, v += 4) {
 		uint64_t x0, x1, x2, x3;
 
 		x0 = x1 = x2 = x3 = comp_skey[u];
@@ -392,7 +399,7 @@ static void br_aes_ct64_skey_expand(uint64_t *skey, const uint64_t *comp_skey)
 	}
 }
 
-static inline void add_round_key(uint64_t *q, const uint64_t *sk)
+static inline void add_round_key(uint64_t* q, const uint64_t* sk)
 {
 	q[0] ^= sk[0];
 	q[1] ^= sk[1];
@@ -404,11 +411,11 @@ static inline void add_round_key(uint64_t *q, const uint64_t *sk)
 	q[7] ^= sk[7];
 }
 
-static inline void shift_rows(uint64_t *q)
+static inline void shift_rows(uint64_t* q)
 {
 	int i;
 
-	for (i = 0; i < 8; i ++) {
+	for (i = 0; i < 8; i++) {
 		uint64_t x;
 
 		x = q[i];
@@ -427,7 +434,7 @@ static inline uint64_t rotr32(uint64_t x)
 	return (x << 32) | (x >> 32);
 }
 
-static inline void mix_columns(uint64_t *q)
+static inline void mix_columns(uint64_t* q)
 {
 	uint64_t q0, q1, q2, q3, q4, q5, q6, q7;
 	uint64_t r0, r1, r2, r3, r4, r5, r6, r7;
@@ -459,49 +466,49 @@ static inline void mix_columns(uint64_t *q)
 	q[7] = q6 ^ r6 ^ r7 ^ rotr32(q7 ^ r7);
 }
 
-static void inc4_be(uint32_t *x)
+static void inc4_be(uint32_t* x)
 {
-  *x = br_swap32(*x)+4;
-  *x = br_swap32(*x);
+	*x = br_swap32(*x) + 4;
+	*x = br_swap32(*x);
 }
 
 static void aes_gcm4x(uint8_t out[64], uint32_t ivw[16], uint64_t sk_exp[64])
 {
-  uint32_t w[16];
-  uint64_t q[8];
-  int i;
+	uint32_t w[16];
+	uint64_t q[8];
+	int i;
 
-  memcpy(w, ivw, sizeof(w));
-  for (i = 0; i < 4; i++) {
-    br_aes_ct64_interleave_in(&q[i], &q[i + 4], w + (i << 2));
-  }
-  br_aes_ct64_ortho(q);
+	memcpy(w, ivw, sizeof(w));
+	for (i = 0; i < 4; i++) {
+		br_aes_ct64_interleave_in(&q[i], &q[i + 4], w + (i << 2));
+	}
+	br_aes_ct64_ortho(q);
 
-  add_round_key(q, sk_exp);
-  for (i = 1; i < 14; i++) {
-    br_aes_ct64_bitslice_Sbox(q);
-    shift_rows(q);
-    mix_columns(q);
-    add_round_key(q, sk_exp + (i << 3));
-  }
-  br_aes_ct64_bitslice_Sbox(q);
-  shift_rows(q);
-  add_round_key(q, sk_exp + 112);
+	add_round_key(q, sk_exp);
+	for (i = 1; i < 14; i++) {
+		br_aes_ct64_bitslice_Sbox(q);
+		shift_rows(q);
+		mix_columns(q);
+		add_round_key(q, sk_exp + (i << 3));
+	}
+	br_aes_ct64_bitslice_Sbox(q);
+	shift_rows(q);
+	add_round_key(q, sk_exp + 112);
 
-  br_aes_ct64_ortho(q);
-  for (i = 0; i < 4; i ++) {
-    br_aes_ct64_interleave_out(w + (i << 2), q[i], q[i + 4]);
-  }
-  br_range_enc32le(out, w, 16);
+	br_aes_ct64_ortho(q);
+	for (i = 0; i < 4; i++) {
+		br_aes_ct64_interleave_out(w + (i << 2), q[i], q[i + 4]);
+	}
+	br_range_enc32le(out, w, 16);
 
-  /* Increase counter for next 4 blocks */
-  inc4_be(ivw +  3);
-  inc4_be(ivw +  7);
-  inc4_be(ivw + 11);
-  inc4_be(ivw + 15);
+	/* Increase counter for next 4 blocks */
+	inc4_be(ivw + 3);
+	inc4_be(ivw + 7);
+	inc4_be(ivw + 11);
+	inc4_be(ivw + 15);
 }
 
-static void br_aes_ct64_gcm_init(uint64_t sk_exp[120], const uint8_t *key)
+static void br_aes_ct64_gcm_init(uint64_t sk_exp[120], const uint8_t* key)
 {
 	uint64_t skey[30];
 
@@ -509,17 +516,17 @@ static void br_aes_ct64_gcm_init(uint64_t sk_exp[120], const uint8_t *key)
 	br_aes_ct64_skey_expand(sk_exp, skey);
 }
 
-static void br_aes_ct64_gcm_run(uint64_t sk_exp[120], const uint8_t *iv, uint32_t cc, uint8_t *data, size_t len)
+static void br_aes_ct64_gcm_run(uint64_t sk_exp[120], const uint8_t* iv, uint32_t cc, uint8_t* data, size_t len)
 {
 	uint32_t ivw[16];
 	size_t i;
 
 	br_range_dec32le(ivw, 3, iv);
-	memcpy(ivw +  4, ivw, 3 * sizeof(uint32_t));
-	memcpy(ivw +  8, ivw, 3 * sizeof(uint32_t));
+	memcpy(ivw + 4, ivw, 3 * sizeof(uint32_t));
+	memcpy(ivw + 8, ivw, 3 * sizeof(uint32_t));
 	memcpy(ivw + 12, ivw, 3 * sizeof(uint32_t));
-	ivw[ 3] = br_swap32(cc);
-	ivw[ 7] = br_swap32(cc + 1);
+	ivw[3] = br_swap32(cc);
+	ivw[7] = br_swap32(cc + 1);
 	ivw[11] = br_swap32(cc + 2);
 	ivw[15] = br_swap32(cc + 3);
 
@@ -529,18 +536,18 @@ static void br_aes_ct64_gcm_run(uint64_t sk_exp[120], const uint8_t *iv, uint32_
 		len -= 64;
 	}
 
-	if(len > 0) {
+	if (len > 0) {
 		uint8_t tmp[64];
 		aes_gcm4x(tmp, ivw, sk_exp);
-		for(i=0;i<len;i++)
+		for (i = 0; i < len; i++)
 			data[i] = tmp[i];
 	}
 }
 
 void aes256_gcm_tag_make(uint8_t* inputText, size_t encLen, aes256gcm_ghash_set* ghash_set, uint8_t* hash_tag) {
-	//make Ghash_tag with additional data
+	// make Ghash_tag with additional data
 	for (int i = 0; i < ghash_set->ad_size; i++) {
-		if (i < AES256gcm_HASHBYTES) 
+		if (i < AES256gcm_HASHBYTES)
 			hash_tag[i] = Galua_mul(hash_tag[i] ^ ghash_set->ad[i], ghash_set->Ghash[i]); //initial Ghash
 		else
 			hash_tag[i % AES256gcm_HASHBYTES] = Galua_mul(hash_tag[i % AES256gcm_HASHBYTES] ^ ghash_set->ad[i], hash_tag[i % AES256gcm_HASHBYTES]);
@@ -548,28 +555,28 @@ void aes256_gcm_tag_make(uint8_t* inputText, size_t encLen, aes256gcm_ghash_set*
 	for (int i = (ghash_set->ad_size % AES256gcm_HASHBYTES); i < AES256gcm_HASHBYTES; i++) {
 		hash_tag[i] = Galua_mul(hash_tag[i] ^ 0, hash_tag[i]);	//additional data padding(0) and make hash_tag
 	}
-	
-	// make Ghash_tag with cipherText
+
+	// make Ghash_tag with inputText
 	for (int i = 0; i < encLen; i++) {
 		hash_tag[i % AES256gcm_HASHBYTES] = Galua_mul(hash_tag[i % AES256gcm_HASHBYTES] ^ inputText[i], hash_tag[i % AES256gcm_HASHBYTES]);
 	}
-	
 
-	for (int i = encLen % AES256gcm_HASHBYTES; i < AES256gcm_HASHBYTES; i++) {				//cipherText padding and make hash_tag
+	// inputText padding and make hash_tag
+	for (int i = encLen % AES256gcm_HASHBYTES; i < AES256gcm_HASHBYTES; i++) {
 		hash_tag[i] = Galua_mul(hash_tag[i], hash_tag[i]);
 	}
-	
-	//  make Ghash_tag with len of cipherText && additional data
+
+	// make Ghash_tag with len of inputText && len of additional_data
 	uint64_t ad_size[2] = { 0, }, text_size[2] = { 0, };
-	ad_size[1]   = (uint64_t)((ghash_set->ad_size * 256) >> (64 * 3));
-	ad_size[0]   = (uint64_t)((ghash_set->ad_size * 256) >> (64 * 2));
+	ad_size[1] = (uint64_t)((ghash_set->ad_size * 256) >> (64 * 3));
+	ad_size[0] = (uint64_t)((ghash_set->ad_size * 256) >> (64 * 2));
 	text_size[1] = (uint64_t)((encLen * 8) >> (64 * 1));
 	text_size[0] = (uint64_t)((encLen * 8) >> (64 * 0));
 	uint8_t hash_tag_para[64] = { 0, };
 
 	for (int i = 0; i < 8; i++) {
-		hash_tag_para[i     ] = (uint8_t)(ad_size[1]   >> (56 - i * 8));
-		hash_tag_para[i +  8] = (uint8_t)(ad_size[0]   >> (56 - i * 8));
+		hash_tag_para[i] = (uint8_t)(ad_size[1] >> (56 - i * 8));
+		hash_tag_para[i + 8] = (uint8_t)(ad_size[0] >> (56 - i * 8));
 		hash_tag_para[i + 16] = (uint8_t)(text_size[1] >> (56 - i * 8));
 		hash_tag_para[i + 24] = (uint8_t)(text_size[0] >> (56 - i * 8));
 	}
@@ -579,35 +586,36 @@ void aes256_gcm_tag_make(uint8_t* inputText, size_t encLen, aes256gcm_ghash_set*
 	}
 }
 
-void aes256gcm_prf(uint8_t *out, size_t outlen, const uint8_t *key, const uint8_t *nonce)
+void aes256gcm_prf(uint8_t* out, size_t outlen, const uint8_t* key, const uint8_t* nonce)
 {
-  uint64_t sk_exp[120];
-  br_aes_ct64_gcm_init(sk_exp, key);
-  br_aes_ct64_gcm_run(sk_exp, nonce, 0, out, outlen);
+	uint64_t sk_exp[120];
+	br_aes_ct64_gcm_init(sk_exp, key);
+	br_aes_ct64_gcm_run(sk_exp, nonce, 0, out, outlen);
 }
 
 void aes256gcm_init(aes256gcm_ctx* s, const uint8_t* key, const uint8_t* nonce)
 {
-  br_aes_ct64_gcm_init(s->sk_exp, key);
+	br_aes_ct64_gcm_init(s->sk_exp, key);
 
-  br_range_dec32le(s->ivw, 3, nonce);
-  memcpy(s->ivw +  4, s->ivw, 3 * sizeof(uint32_t));
-  memcpy(s->ivw +  8, s->ivw, 3 * sizeof(uint32_t));
-  memcpy(s->ivw + 12, s->ivw, 3 * sizeof(uint32_t));
-  s->ivw[ 3] = br_swap32(0);
-  s->ivw[ 7] = br_swap32(1);
-  s->ivw[11] = br_swap32(2);
-  s->ivw[15] = br_swap32(3);
+	br_range_dec32le(s->ivw, 3, nonce);
+	memcpy(s->ivw + 4, s->ivw, 3 * sizeof(uint32_t));
+	memcpy(s->ivw + 8, s->ivw, 3 * sizeof(uint32_t));
+	memcpy(s->ivw + 12, s->ivw, 3 * sizeof(uint32_t));
+	s->ivw[3] = br_swap32(0);
+	s->ivw[7] = br_swap32(1);
+	s->ivw[11] = br_swap32(2);
+	s->ivw[15] = br_swap32(3);
 }
 
-void aes256gcm_squeezeblocks(uint8_t *out, size_t outLen, aes256gcm_ctx *s)
+void aes256gcm_squeezeblocks(uint8_t* out, size_t outLen, aes256gcm_ctx* s)
 {
+	// squeezeblocks for 4 128-bit blocks at the same time.
 	size_t nblocks = outLen / 64;
 	while (nblocks--) {
-	  aes_gcm4x(out, s->ivw, s->sk_exp);
-	  out += 64;
+		aes_gcm4x(out, s->ivw, s->sk_exp);
+		out += 64;
 	}
-	
+	// if '*out' need padding, use zero padding and continue squeezeblocks
 	if (outLen % 64 != 0) {
 		uint8_t temp_block[64] = { 0, };
 
@@ -615,26 +623,26 @@ void aes256gcm_squeezeblocks(uint8_t *out, size_t outLen, aes256gcm_ctx *s)
 		aes_gcm4x(temp_block, s->ivw, s->sk_exp);
 		memcpy(out, temp_block, outLen % 64);
 	}
-	
+
 }
 
-void aes256gcm_encrypt(uint8_t* inputText, uint8_t* stream_key, size_t encLen, aes256gcm_ghash_set* ghash_set) {	
+void aes256gcm_encrypt(uint8_t* inputText, uint8_t* stream_key, size_t encLen, aes256gcm_ghash_set* ghash_set) {
 	for (int i = 0; i < encLen; i++) {
 		inputText[i] ^= stream_key[i];
 	}
-	
-	uint8_t tempTag[32] = { 0, };
+
+	uint8_t tempTag[16] = { 0, };
 	aes256_gcm_tag_make(inputText, encLen, ghash_set, tempTag);
 	memcpy(ghash_set->enc_tag_result, tempTag, sizeof(tempTag));
 }
 
 
 int aes256gcm_decrypt(uint8_t* inputText, uint8_t* stream_key, size_t decLen, aes256gcm_ghash_set* ghash_set) {
-	uint8_t tempTag[32] = { 0, };
+	uint8_t tempTag[16] = { 0, };
 	aes256_gcm_tag_make(inputText, decLen, ghash_set, tempTag);
 	memcpy(ghash_set->dec_tag_result, tempTag, sizeof(tempTag));
 
-	for (int i = 0; i < sizeof(ghash_set->Ghash); i++) {					//<-matching hsah tag
+	for (int i = 0; i < sizeof(ghash_set->Ghash); i++) {					//<-compare hsah tag
 		if (ghash_set->enc_tag_result[i] != ghash_set->dec_tag_result[i])
 			return 0;
 	}

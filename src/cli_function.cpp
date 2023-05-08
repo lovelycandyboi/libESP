@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "../include/cli.h"
 #include "../crypto/aes.h"
-#include "../crypto/aes256ctr.h"
+#include "../crypto/aes256gcm.h"
 
 extern CLI_BLOCK* CLI_BLOCK_HEAD;
 extern char VV_stringArgs[10][CLI_ARG_BUFFER_SIZE];
